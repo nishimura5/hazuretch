@@ -19,7 +19,7 @@ class Inputdata(ttk.Frame):
         self.canvas = canvas
         self.ax = ax
         self.load_file()
-        self.plot(mode='stripplot')
+        self.plot(mode='none')
 
     def set_plot(self, canvas, ax, mode):
         self.canvas = canvas
