@@ -5,7 +5,7 @@ from tkinter import filedialog
 from tkinter import ttk
 
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 import pandas as pd
 import seaborn as sns
@@ -63,11 +63,13 @@ if __name__=="__main__":
     button_frame.pack()
 
     dpi = 200
-    fig, ax = plt.subplots(dpi=dpi)
+    fig, ax = plt.subplots(figsize=(800/dpi, 530/dpi), dpi=dpi)
     fig.canvas.mpl_connect("button_press_event", click)
     canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.get_tk_widget().pack()
     graph_frame.pack()
 
+    toolbar = NavigationToolbar2Tk(canvas, root)
+    toolbar.pack()
 
     root.mainloop()
