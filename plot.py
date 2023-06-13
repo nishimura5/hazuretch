@@ -12,34 +12,48 @@ import seaborn as sns
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
-        self.file_path = ''
+        self.y_max = 100
+        self.y_min = -100
 
     def load_and_plot(self, canvas, ax):
+        self.canvas = canvas
+        self.ax = ax
         self.load_file()
-        self.plot(canvas, ax)
+        self.plot(mode='stripplot')
+
+    def set_plot(self, canvas, ax, mode):
+        self.canvas = canvas
+        self.ax = ax
+        self.plot(mode=mode)
 
     def load_file(self):
         script_path = os.path.abspath(os.path.dirname(__file__))
         file_path = filedialog.askopenfilename(initialdir=script_path)
         self.src_df = pd.read_csv(file_path, index_col='time')
+        self.y_max = max(self.src_df.max())
+        self.y_min = min(self.src_df.min())
 
-    def plot(self, canvas, ax):
+    def plot(self, mode='swarmplot'):
         col_num = len(self.src_df.columns)
 
-        ax.cla()
-        ax.set_ylim(0, 10)
-        sns.violinplot(data=self.src_df, linewidth=1, inner=None, facecolor='None', ax=ax)
-        sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=ax)
-        sns.boxplot(data=self.src_df, linewidth=1, color='lightgray', width=0.1, ax=ax)
+        self.ax.cla()
+        self.ax.set_ylim(self.y_min, self.y_max)
+        sns.violinplot(data=self.src_df, linewidth=1, inner=None, facecolor='None', ax=self.ax)
+        if mode == 'swarmplot':
+            sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=self.ax)
+        elif mode == 'stripplot':
+            sns.stripplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=self.ax)
+        else:
+            pass
+        sns.boxplot(data=self.src_df, linewidth=1, color='lightgray', width=0.1, ax=self.ax)
         for idx in range(col_num):
-            ax.collections[idx].set_facecolor('None')
+            self.ax.collections[idx].set_facecolor('None')
 
-        canvas.draw()
+        self.canvas.draw()
 
 def click(event):
     x_val, y_val = (event.xdata, event.ydata)
     print(x_val, y_val)
-
 
 if __name__=="__main__":
     root = tk.Tk()
@@ -53,8 +67,12 @@ if __name__=="__main__":
     input_data = Inputdata(input_frame)
     input_frame.pack()
 
-    draw_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
-    draw_button.grid(row=0, column=0)
+    load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
+    load_button.grid(row=0, column=0)
+    cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
+    cbox.grid(row=0, column=1)
+    cbox.bind("<<ComboboxSelected>>", lambda _ : input_data.set_plot(canvas, ax, cbox.get()))
+
     button_frame.pack()
 
     dpi = 200
