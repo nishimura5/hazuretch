@@ -37,6 +37,11 @@ class SrcFile:
         print(script_path)
         self.file_path = filedialog.askopenfilename(initialdir=script_path)
 
+def click(event):
+    x_val, y_val = (event.xdata, event.ydata)
+    print(x_val, y_val)
+
+
 if __name__=="__main__":
     root = tk.Tk()
     root.title("バイオリン箱ヒゲ")
@@ -59,8 +64,10 @@ if __name__=="__main__":
 
     dpi = 200
     fig, ax = plt.subplots(dpi=dpi)
+    fig.canvas.mpl_connect("button_press_event", click)
     canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.get_tk_widget().pack()
     graph_frame.pack()
+
 
     root.mainloop()
