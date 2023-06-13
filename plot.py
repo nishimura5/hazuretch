@@ -10,6 +10,42 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 import pandas as pd
 import seaborn as sns
 
+class App(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.pack()
+
+        master.geometry("800x600")
+        master.title("バイオリン箱ヒゲ")
+        input_frame = ttk.Frame(master)
+        button_frame = ttk.Frame(master)
+        graph_frame = ttk.Frame(master)
+        hazure_frame = ttk.Frame(master)
+
+        input_data = Inputdata(input_frame)
+        input_frame.pack()
+
+        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
+        load_button.grid(row=0, column=0)
+        cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
+        cbox.grid(row=0, column=1)
+        cbox.bind("<<ComboboxSelected>>", lambda _ : input_data.set_plot(canvas, ax, cbox.get()))
+
+        button_frame.pack()
+
+        dpi = 200
+        fig, ax = plt.subplots(dpi=dpi)
+        fig.canvas.mpl_connect("button_press_event", click)
+        canvas = FigureCanvasTkAgg(fig, master=graph_frame)
+        canvas.get_tk_widget().pack()
+
+        toolbar = NavigationToolbar2Tk(canvas, master)
+        toolbar.pack()
+
+        graph_frame.pack()
+
+        master.protocol("WM_DELETE_WINDOW", toolbar.quit)
+
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
         self.y_max = 100
@@ -55,36 +91,10 @@ def click(event):
     x_val, y_val = (event.xdata, event.ydata)
     print(x_val, y_val)
 
+def main():
+    win = tk.Tk()
+    app = App(master=win)
+    app.mainloop()
+
 if __name__=="__main__":
-    root = tk.Tk()
-    root.title("バイオリン箱ヒゲ")
-    root.geometry("800x600")
-
-    input_frame = ttk.Frame(root)
-    button_frame = ttk.Frame(root)
-    graph_frame = ttk.Frame(root)
-
-    input_data = Inputdata(input_frame)
-    input_frame.pack()
-
-    load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
-    load_button.grid(row=0, column=0)
-    cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
-    cbox.grid(row=0, column=1)
-    cbox.bind("<<ComboboxSelected>>", lambda _ : input_data.set_plot(canvas, ax, cbox.get()))
-
-    button_frame.pack()
-
-    dpi = 200
-    fig, ax = plt.subplots(dpi=dpi)
-    fig.canvas.mpl_connect("button_press_event", click)
-    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
-    canvas.get_tk_widget().pack()
-
-    toolbar = NavigationToolbar2Tk(canvas, root)
-    toolbar.pack()
-
-    graph_frame.pack()
-
-    root.protocol("WM_DELETE_WINDOW", toolbar.quit)
-    root.mainloop()
+    main()
