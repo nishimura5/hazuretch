@@ -1,10 +1,9 @@
+import os
+
 import tkinter as tk
+from tkinter import filedialog
 from tkinter import ttk
 
-import numpy as np
-import matplotlib
-matplotlib.use("macosx")
-matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -15,8 +14,8 @@ class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
         pass
 
-    def plot(self, canvas, ax):
-        src_df = pd.read_csv('./src.csv', index_col='time')
+    def plot(self, file_path, canvas, ax):
+        src_df = pd.read_csv(file_path, index_col='time')
         col_num = len(src_df.columns)
 
         ax.cla()
@@ -29,9 +28,19 @@ class Inputdata(ttk.Frame):
 
         canvas.draw()
 
+class SrcFile:
+    def __init__(self):
+        self.file_path = ''
+
+    def load_file(self):
+        script_path = os.path.abspath(os.path.dirname(__file__))
+        print(script_path)
+        self.file_path = filedialog.askopenfilename(initialdir=script_path)
+
 if __name__=="__main__":
     root = tk.Tk()
-    root.title("data-keiko")
+    root.title("バイオリン箱ヒゲ")
+    root.geometry("800x600")
 
     input_frame = ttk.Frame(root)
     button_frame = ttk.Frame(root)
@@ -40,8 +49,12 @@ if __name__=="__main__":
     input_data = Inputdata(input_frame)
     input_frame.pack()
 
-    draw_button = tk.Button(button_frame, text="描画", width=15, command=lambda:input_data.plot(canvas, ax))
-    draw_button.grid(row=0, column=0)
+    src_file = SrcFile()
+
+    load_button = tk.Button(button_frame, text="読み込み", width=15, command=lambda:src_file.load_file())
+    load_button.grid(row=0, column=0)
+    draw_button = tk.Button(button_frame, text="描画", width=15, command=lambda:input_data.plot(src_file.file_path, canvas, ax))
+    draw_button.grid(row=0, column=1)
     button_frame.pack()
 
     dpi = 200
