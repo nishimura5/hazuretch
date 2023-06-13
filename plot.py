@@ -12,30 +12,29 @@ import seaborn as sns
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
-        pass
+        self.file_path = ''
 
-    def plot(self, file_path, canvas, ax):
-        src_df = pd.read_csv(file_path, index_col='time')
-        col_num = len(src_df.columns)
+    def load_and_plot(self, canvas, ax):
+        self.load_file()
+        self.plot(canvas, ax)
+
+    def load_file(self):
+        script_path = os.path.abspath(os.path.dirname(__file__))
+        file_path = filedialog.askopenfilename(initialdir=script_path)
+        self.src_df = pd.read_csv(file_path, index_col='time')
+
+    def plot(self, canvas, ax):
+        col_num = len(self.src_df.columns)
 
         ax.cla()
         ax.set_ylim(0, 10)
-        sns.violinplot(data=src_df, linewidth=1, inner=None, facecolor='None', ax=ax)
-        sns.swarmplot(data=src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=ax)
-        sns.boxplot(data=src_df, linewidth=1, color='lightgray', width=0.1, ax=ax)
+        sns.violinplot(data=self.src_df, linewidth=1, inner=None, facecolor='None', ax=ax)
+        sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=ax)
+        sns.boxplot(data=self.src_df, linewidth=1, color='lightgray', width=0.1, ax=ax)
         for idx in range(col_num):
             ax.collections[idx].set_facecolor('None')
 
         canvas.draw()
-
-class SrcFile:
-    def __init__(self):
-        self.file_path = ''
-
-    def load_file(self):
-        script_path = os.path.abspath(os.path.dirname(__file__))
-        print(script_path)
-        self.file_path = filedialog.askopenfilename(initialdir=script_path)
 
 def click(event):
     x_val, y_val = (event.xdata, event.ydata)
@@ -54,22 +53,20 @@ if __name__=="__main__":
     input_data = Inputdata(input_frame)
     input_frame.pack()
 
-    src_file = SrcFile()
-
-    load_button = tk.Button(button_frame, text="読み込み", width=15, command=lambda:src_file.load_file())
-    load_button.grid(row=0, column=0)
-    draw_button = tk.Button(button_frame, text="描画", width=15, command=lambda:input_data.plot(src_file.file_path, canvas, ax))
-    draw_button.grid(row=0, column=1)
+    draw_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
+    draw_button.grid(row=0, column=0)
     button_frame.pack()
 
     dpi = 200
-    fig, ax = plt.subplots(figsize=(800/dpi, 530/dpi), dpi=dpi)
+    fig, ax = plt.subplots(dpi=dpi)
     fig.canvas.mpl_connect("button_press_event", click)
     canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.get_tk_widget().pack()
-    graph_frame.pack()
 
     toolbar = NavigationToolbar2Tk(canvas, root)
     toolbar.pack()
 
+    graph_frame.pack()
+
+    root.protocol("WM_DELETE_WINDOW", toolbar.quit)
     root.mainloop()
