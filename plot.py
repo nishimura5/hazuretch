@@ -30,7 +30,7 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
+        load_button = tk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
         load_button.grid(row=0, column=0)
         plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
         plot_cbox.grid(row=0, column=1)
@@ -52,10 +52,12 @@ class App(tk.Frame):
         self.column_cbox.grid(row=0, column=0)
         self.remove_lower_entry = tk.Entry(hazure_frame)
         self.remove_lower_entry.grid(row=0, column=1)
+        nyoro = tk.Label(hazure_frame, text='～')
+        nyoro.grid(row=0, column=2)
         self.remove_upper_entry = tk.Entry(hazure_frame)
-        self.remove_upper_entry.grid(row=0, column=2)
+        self.remove_upper_entry.grid(row=0, column=3)
         output_button = tk.Button(hazure_frame, text="除去", width=10, command=lambda:[self.remove_plots()])
-        output_button.grid(row=0, column=3)
+        output_button.grid(row=0, column=4)
 
         hazure_frame.pack()
 
