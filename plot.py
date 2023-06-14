@@ -4,8 +4,13 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import ttk
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import matplotlib
+
+## only for mac?
+matplotlib.use("tkagg")
 
 import pandas as pd
 import seaborn as sns
@@ -16,7 +21,7 @@ class App(tk.Frame):
         self.pack()
 
         master.geometry("800x600")
-        master.title("バイオリン箱ヒゲ")
+        master.title("バイオリン箱ひげ")
         input_frame = ttk.Frame(master)
         button_frame = ttk.Frame(master)
         graph_frame = ttk.Frame(master)
@@ -25,7 +30,7 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.test()])
+        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
         load_button.grid(row=0, column=0)
         plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
         plot_cbox.grid(row=0, column=1)
@@ -34,7 +39,7 @@ class App(tk.Frame):
         button_frame.pack()
 
         dpi = 200
-        fig, ax = plt.subplots(figsize=(8,500/dpi), dpi=dpi)
+        fig, ax = plt.subplots(figsize=(800/dpi,500/dpi), dpi=dpi)
         fig.canvas.mpl_connect("button_press_event", self.click)
         canvas = FigureCanvasTkAgg(fig, master=graph_frame)
 
@@ -45,17 +50,45 @@ class App(tk.Frame):
 
         self.column_cbox = ttk.Combobox(hazure_frame, state='readonly')
         self.column_cbox.grid(row=0, column=0)
+        self.remove_lower_entry = tk.Entry(hazure_frame)
+        self.remove_lower_entry.grid(row=0, column=1)
+        self.remove_upper_entry = tk.Entry(hazure_frame)
+        self.remove_upper_entry.grid(row=0, column=2)
+        output_button = tk.Button(hazure_frame, text="除去", width=10, command=lambda:[self.remove_plots()])
+        output_button.grid(row=0, column=3)
+
         hazure_frame.pack()
 
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
 
-    def test(self):
+    def update_col_cbox(self):
         self.column_cbox['value'] = list(self.input_data.src_df.columns)
+
+    def remove_plots(self):
+        col = self.column_cbox.get()
+        remove_lower = self.remove_lower_entry.get()
+        remove_upper = self.remove_upper_entry.get()
+        if self._is_float(remove_lower) and self._is_float(remove_upper):
+            remove_lower = float(remove_lower)
+            remove_upper = float(remove_upper)
+        else:
+            return
+        print(col, remove_lower, remove_upper)
+
+        self.input_data.src_df[(self.input_data.src_df[col] >= remove_lower)&(self.input_data.src_df[col] <= remove_upper)] = np.nan
+        ## 除去後のデータをCSV出力
+        self.input_data.src_df.to_csv('./dst.csv')
+        self.input_data.plot()
+
+    def _is_float(self, string):
+        if string.replace(".", "").isnumeric():
+            return True
+        else:
+            return False
 
     def click(self, event):
         x_val, y_val = (event.xdata, event.ydata)
         print(x_val, y_val)
-
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
@@ -80,7 +113,7 @@ class Inputdata(ttk.Frame):
         self.y_max = max(self.src_df.max())
         self.y_min = min(self.src_df.min())
 
-    def plot(self, mode='swarmplot'):
+    def plot(self, mode='none'):
         col_num = len(self.src_df.columns)
 
         self.ax.cla()
