@@ -21,7 +21,7 @@ class App(tk.Frame):
         self.pack()
 
         master.geometry("800x600")
-        master.title("バイオリン箱ひげ")
+        master.title("はずれっち")
         input_frame = ttk.Frame(master)
         button_frame = ttk.Frame(master)
         graph_frame = ttk.Frame(master)
@@ -30,34 +30,34 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = tk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
-        load_button.grid(row=0, column=0)
+        load_button = ttk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
+        load_button.grid(row=0, column=0, padx=10)
         plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
         plot_cbox.grid(row=0, column=1)
         plot_cbox.bind("<<ComboboxSelected>>", lambda _ : [self.input_data.set_plot(canvas, ax, plot_cbox.get())])
 
-        button_frame.pack()
+        button_frame.pack(pady=5)
 
-        dpi = 200
-        fig, ax = plt.subplots(figsize=(800/dpi,500/dpi), dpi=dpi)
+        dpi = 120
+        fig, ax = plt.subplots(figsize=(1200/dpi,900/dpi), dpi=dpi)
         fig.canvas.mpl_connect("button_press_event", self.click)
         canvas = FigureCanvasTkAgg(fig, master=graph_frame)
 
         toolbar = NavigationToolbar2Tk(canvas, graph_frame)
         toolbar.pack()
-        canvas.get_tk_widget().pack()
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
         graph_frame.pack()
 
-        self.column_cbox = ttk.Combobox(hazure_frame, state='readonly')
-        self.column_cbox.grid(row=0, column=0)
-        self.remove_lower_entry = tk.Entry(hazure_frame)
-        self.remove_lower_entry.grid(row=0, column=1)
-        nyoro = tk.Label(hazure_frame, text='～')
-        nyoro.grid(row=0, column=2)
-        self.remove_upper_entry = tk.Entry(hazure_frame)
-        self.remove_upper_entry.grid(row=0, column=3)
-        output_button = tk.Button(hazure_frame, text="除去", width=10, command=lambda:[self.remove_plots()])
-        output_button.grid(row=0, column=4)
+        self.column_cbox = ttk.Combobox(toolbar, state='readonly')
+        self.column_cbox.pack(side=tk.LEFT, padx=10)
+        self.remove_lower_entry = ttk.Entry(toolbar, width=8)
+        self.remove_lower_entry.pack(side=tk.LEFT)
+        nyoro = tk.Label(toolbar, text='～')
+        nyoro.pack(side=tk.LEFT)
+        self.remove_upper_entry = ttk.Entry(toolbar, width=8)
+        self.remove_upper_entry.pack(side=tk.LEFT)
+        output_button = ttk.Button(toolbar, text="除去", width=10, command=lambda:[self.remove_plots()])
+        output_button.pack(side=tk.LEFT, padx=10)
 
         hazure_frame.pack()
 
@@ -127,7 +127,7 @@ class Inputdata(ttk.Frame):
             sns.stripplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
         else:
             pass
-        sns.boxplot(data=self.src_df, linewidth=1, color='lightgray', width=0.1, ax=self.ax)
+        sns.boxplot(data=self.src_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
         for idx in range(col_num):
             self.ax.collections[idx].set_facecolor('None')
 

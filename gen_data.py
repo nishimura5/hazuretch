@@ -16,12 +16,12 @@ def sample1():
 
 def sample2():
     data = {}
-    data['time'] = pd.timedelta_range(start='0 day', periods=100000, freq='10L')
-    data['sigma1'] = np.random.normal(20, 1, 100000)
-    data['sigma2'] = np.random.normal(20, 2, 100000)
+    data['time'] = pd.timedelta_range(start='0 day', periods=1000, freq='10L')
+    data['sigma1'] = np.random.normal(20, 1, 1000)
+    data['sigma2'] = np.random.normal(20, 2, 1000)
 
-    a = np.random.normal(18, 0.7, 50000)
-    b = np.random.normal(22, 0.7, 50000)
+    a = np.random.normal(18, 0.7, 500)
+    b = np.random.normal(22, 0.7, 500)
     data['double'] = np.concatenate([a,b])
 
     data_df = pd.DataFrame(data)
