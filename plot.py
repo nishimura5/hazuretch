@@ -22,29 +22,40 @@ class App(tk.Frame):
         graph_frame = ttk.Frame(master)
         hazure_frame = ttk.Frame(master)
 
-        input_data = Inputdata(input_frame)
+        self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:input_data.load_and_plot(canvas, ax))
+        load_button = tk.Button(button_frame, text="開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.test()])
         load_button.grid(row=0, column=0)
-        cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
-        cbox.grid(row=0, column=1)
-        cbox.bind("<<ComboboxSelected>>", lambda _ : input_data.set_plot(canvas, ax, cbox.get()))
+        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
+        plot_cbox.grid(row=0, column=1)
+        plot_cbox.bind("<<ComboboxSelected>>", lambda _ : [self.input_data.set_plot(canvas, ax, plot_cbox.get())])
 
         button_frame.pack()
 
         dpi = 200
-        fig, ax = plt.subplots(dpi=dpi)
-        fig.canvas.mpl_connect("button_press_event", click)
+        fig, ax = plt.subplots(figsize=(8,500/dpi), dpi=dpi)
+        fig.canvas.mpl_connect("button_press_event", self.click)
         canvas = FigureCanvasTkAgg(fig, master=graph_frame)
-        canvas.get_tk_widget().pack()
 
-        toolbar = NavigationToolbar2Tk(canvas, master)
+        toolbar = NavigationToolbar2Tk(canvas, graph_frame)
         toolbar.pack()
-
+        canvas.get_tk_widget().pack()
         graph_frame.pack()
 
+        self.column_cbox = ttk.Combobox(hazure_frame, state='readonly')
+        self.column_cbox.grid(row=0, column=0)
+        hazure_frame.pack()
+
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
+
+    def test(self):
+        self.column_cbox['value'] = list(self.input_data.src_df.columns)
+
+    def click(self, event):
+        x_val, y_val = (event.xdata, event.ydata)
+        print(x_val, y_val)
+
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
@@ -86,10 +97,6 @@ class Inputdata(ttk.Frame):
             self.ax.collections[idx].set_facecolor('None')
 
         self.canvas.draw()
-
-def click(event):
-    x_val, y_val = (event.xdata, event.ydata)
-    print(x_val, y_val)
 
 def main():
     win = tk.Tk()
