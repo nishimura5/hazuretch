@@ -75,7 +75,7 @@ class App(tk.Frame):
             return
         print(col, remove_lower, remove_upper)
 
-        self.input_data.src_df[(self.input_data.src_df[col] >= remove_lower)&(self.input_data.src_df[col] <= remove_upper)] = np.nan
+        self.input_data.src_df.loc[(self.input_data.src_df[col] >= remove_lower)&(self.input_data.src_df[col] <= remove_upper), col] = np.nan
         ## 除去後のデータをCSV出力
         self.input_data.src_df.to_csv('./dst.csv')
         self.input_data.plot()
