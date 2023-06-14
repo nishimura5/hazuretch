@@ -120,9 +120,9 @@ class Inputdata(ttk.Frame):
         self.ax.set_ylim(self.y_min, self.y_max)
         sns.violinplot(data=self.src_df, linewidth=1, inner=None, facecolor='None', ax=self.ax)
         if mode == 'swarmplot':
-            sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=self.ax)
+            sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
         elif mode == 'stripplot':
-            sns.stripplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.4, ax=self.ax)
+            sns.stripplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
         else:
             pass
         sns.boxplot(data=self.src_df, linewidth=1, color='lightgray', width=0.1, ax=self.ax)
