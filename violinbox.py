@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib
+from matplotlib import ticker
 
 ## only for mac?
 matplotlib.use("tkagg")
@@ -32,7 +33,7 @@ class App(tk.Frame):
 
         load_button = ttk.Button(button_frame, text="CSVを開く", width=10, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
         load_button.grid(row=0, column=0, padx=10)
-        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly', width=10)
+        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none', 'lineplot'], state='readonly', width=10)
         plot_cbox.grid(row=0, column=1, padx=10)
 
         caption_time = tk.Label(button_frame, text='time:')
@@ -153,17 +154,23 @@ class Inputdata(ttk.Frame):
         self.ax.cla()
         self.ax.set_ylim(y_min, y_max)
 
-        sns.violinplot(data=plot_df, linewidth=1, showmeans=True, inner=None, ax=self.ax)
-        for collection in self.ax.collections:
-            collection.set_facecolor('none')
-
-        if mode == 'swarmplot':
-            sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
-        elif mode == 'stripplot':
-            sns.stripplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
+        if mode == 'lineplot':
+            tick_interval = len(plot_df.index) / 10
+            self.ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_interval)) 
+            sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax);
         else:
-            pass
-        sns.boxplot(data=plot_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
+            self.ax.xaxis.set_major_locator(ticker.MultipleLocator(1)) 
+            sns.violinplot(data=plot_df, linewidth=1, showmeans=True, inner=None, ax=self.ax)
+            for collection in self.ax.collections:
+                collection.set_facecolor('none')
+
+            if mode == 'swarmplot':
+                sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
+            elif mode == 'stripplot':
+                sns.stripplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
+            else:
+                pass
+            sns.boxplot(data=plot_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
 
         self.canvas.draw()
 
