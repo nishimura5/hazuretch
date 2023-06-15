@@ -30,11 +30,20 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = ttk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_col_cbox()])
-        load_button.grid(row=0, column=0, padx=10)
+        load_button = ttk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
+        load_button.grid(row=0, column=0)
         plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
-        plot_cbox.grid(row=0, column=1)
-        plot_cbox.bind("<<ComboboxSelected>>", lambda _ : [self.input_data.set_plot(canvas, ax, plot_cbox.get())])
+        plot_cbox.grid(row=0, column=1, padx=10)
+        plot_cbox.bind("<<ComboboxSelected>>", lambda _ : [self.input_data.set_plot(canvas, ax, plot_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
+
+        caption_time = tk.Label(button_frame, text='time:')
+        caption_time.grid(row=0, column=2)
+        self.time_min_entry = ttk.Entry(button_frame, width=12)
+        self.time_min_entry.grid(row=0, column=3)
+        nyoro_time = tk.Label(button_frame, text='～')
+        nyoro_time.grid(row=0, column=4)
+        self.time_max_entry = ttk.Entry(button_frame, width=12)
+        self.time_max_entry.grid(row=0, column=5)
 
         button_frame.pack(pady=5)
 
@@ -63,8 +72,12 @@ class App(tk.Frame):
 
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
 
-    def update_col_cbox(self):
+    def update_control(self):
         self.column_cbox['value'] = list(self.input_data.src_df.columns)
+        self.time_min_entry.delete(0,tk.END)
+        self.time_min_entry.insert(tk.END,self.input_data.time_min)
+        self.time_max_entry.delete(0,tk.END)
+        self.time_max_entry.insert(tk.END,self.input_data.time_max)
 
     def remove_plots(self):
         col = self.column_cbox.get()
@@ -77,10 +90,11 @@ class App(tk.Frame):
             return
         print(col, remove_lower, remove_upper)
 
-        self.input_data.src_df.loc[(self.input_data.src_df[col] >= remove_lower)&(self.input_data.src_df[col] <= remove_upper), col] = np.nan
+        time_min = self.time_min_entry.get()
+        time_max = self.time_max_entry.get()
+        self.input_data.remove_src(col, remove_lower, remove_upper, time_min, time_max)
         ## 除去後のデータをCSV出力
-        self.input_data.src_df.to_csv('./dst.csv')
-        self.input_data.plot()
+        self.input_data.plot(time_min=time_min, time_max=time_max)
 
     def _is_float(self, string):
         if string.replace(".", "").isnumeric():
@@ -94,8 +108,8 @@ class App(tk.Frame):
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
-        self.y_max = 100
-        self.y_min = -100
+        self.time_min = '00:00:00'
+        self.time_max = '00:00:00'
 
     def load_and_plot(self, canvas, ax):
         self.canvas = canvas
@@ -103,31 +117,51 @@ class Inputdata(ttk.Frame):
         self.load_file()
         self.plot(mode='none')
 
-    def set_plot(self, canvas, ax, mode):
+    def set_plot(self, canvas, ax, mode, time_min, time_max):
         self.canvas = canvas
         self.ax = ax
-        self.plot(mode=mode)
+        self.plot(mode, time_min, time_max)
 
     def load_file(self):
-        script_path = os.path.abspath(os.path.dirname(__file__))
+        script_path = os.getcwd()
+        ## ↓pyinstallerでexeにすると意図しないディレクトリを指示したのでやめる
+#        script_path = os.path.abspath(os.path.dirname(__file__))
         file_path = filedialog.askopenfilename(initialdir=script_path)
         self.src_df = pd.read_csv(file_path, index_col='time')
-        self.y_max = max(self.src_df.max())
-        self.y_min = min(self.src_df.min())
+        self.time_min = min(self.src_df.index)
+        self.time_max = max(self.src_df.index)
 
-    def plot(self, mode='none'):
+    def remove_src(self, col, remove_lower, remove_upper, time_min, time_max):
+        tar_df = self.src_df.loc[time_min:time_max, :]
+        tar_df.loc[(tar_df[col] >= remove_lower)&(tar_df[col] <= remove_upper), col] = np.nan
+        self.src_df.loc[time_min:time_max, :] = tar_df
+        self.src_df.to_csv('./dst.csv')
+
+    def plot(self, mode='none', time_min=None, time_max=None):
+        if time_min is not None and time_max is not None:
+            plot_df = self.src_df.loc[time_min:time_max, :]
+        else:
+            plot_df = self.src_df
+
+        y_max = max(plot_df.max())
+        y_min = min(plot_df.min())
+
         col_num = len(self.src_df.columns)
 
         self.ax.cla()
-        self.ax.set_ylim(self.y_min, self.y_max)
-        sns.violinplot(data=self.src_df, linewidth=1, inner=None, facecolor='None', ax=self.ax)
+        self.ax.set_ylim(y_min, y_max)
+        sns.violinplot(data=plot_df, linewidth=1, inner=None, facecolor='None', ax=self.ax)
         if mode == 'swarmplot':
-            sns.swarmplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
+            sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
         elif mode == 'stripplot':
-            sns.stripplot(data=self.src_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
+            sns.stripplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
         else:
             pass
-        sns.boxplot(data=self.src_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
+        sns.boxplot(data=plot_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
+
+        ## 箱ひげ図とバイオリンプロットの塗を透明にする処理、removeで全部のデータが消えたカラムは直後のplotでax.collectionsがなくなるのでcol_numの値を上書きするようにしている
+        if col_num > len(self.ax.collections):
+            col_num = len(self.ax.collections)
         for idx in range(col_num):
             self.ax.collections[idx].set_facecolor('None')
 
