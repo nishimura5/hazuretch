@@ -33,7 +33,8 @@ class App(tk.Frame):
 
         load_button = ttk.Button(button_frame, text="CSVを開く", width=10, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
         load_button.grid(row=0, column=0, padx=10)
-        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none', 'lineplot'], state='readonly', width=10)
+        plot_cbox = ttk.Combobox(button_frame, values=['default', 'stripplot', 'swarmplot', 'lineplot'], state='readonly', width=10)
+        plot_cbox.current(0)
         plot_cbox.grid(row=0, column=1, padx=10)
 
         caption_time = tk.Label(button_frame, text='time:')
@@ -118,7 +119,7 @@ class Inputdata(ttk.Frame):
         self.canvas = canvas
         self.ax = ax
         self.load_file()
-        self.plot(mode='none')
+        self.plot(mode='default')
 
     def set_plot(self, canvas, ax, mode, time_min, time_max):
         self.canvas = canvas
@@ -140,7 +141,7 @@ class Inputdata(ttk.Frame):
         self.src_df.loc[time_min:time_max, :] = tar_df
         self.src_df.to_csv('./dst.csv')
 
-    def plot(self, mode='none', time_min=None, time_max=None):
+    def plot(self, mode='default', time_min=None, time_max=None):
         if time_min is not None and time_max is not None:
             plot_df = self.src_df.loc[time_min:time_max, :]
         else:
