@@ -30,11 +30,10 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = ttk.Button(button_frame, text="CSVを開く", width=15, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
-        load_button.grid(row=0, column=0)
-        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly')
+        load_button = ttk.Button(button_frame, text="CSVを開く", width=10, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
+        load_button.grid(row=0, column=0, padx=10)
+        plot_cbox = ttk.Combobox(button_frame, values=['stripplot', 'swarmplot', 'none'], state='readonly', width=10)
         plot_cbox.grid(row=0, column=1, padx=10)
-        plot_cbox.bind("<<ComboboxSelected>>", lambda _ : [self.input_data.set_plot(canvas, ax, plot_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
 
         caption_time = tk.Label(button_frame, text='time:')
         caption_time.grid(row=0, column=2)
@@ -44,6 +43,9 @@ class App(tk.Frame):
         nyoro_time.grid(row=0, column=4)
         self.time_max_entry = ttk.Entry(button_frame, width=12)
         self.time_max_entry.grid(row=0, column=5)
+
+        draw_button = ttk.Button(button_frame, text="描画", width=10, command=lambda:[self.input_data.set_plot(canvas, ax, plot_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
+        draw_button.grid(row=0, column=6, padx=10)
 
         button_frame.pack(pady=5)
 
@@ -150,7 +152,11 @@ class Inputdata(ttk.Frame):
 
         self.ax.cla()
         self.ax.set_ylim(y_min, y_max)
-        sns.violinplot(data=plot_df, linewidth=1, inner=None, facecolor='None', ax=self.ax)
+
+        sns.violinplot(data=plot_df, linewidth=1, showmeans=True, inner=None, ax=self.ax)
+        for collection in self.ax.collections:
+            collection.set_facecolor('none')
+
         if mode == 'swarmplot':
             sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
         elif mode == 'stripplot':
@@ -158,12 +164,6 @@ class Inputdata(ttk.Frame):
         else:
             pass
         sns.boxplot(data=plot_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
-
-        ## 箱ひげ図とバイオリンプロットの塗を透明にする処理、removeで全部のデータが消えたカラムは直後のplotでax.collectionsがなくなるのでcol_numの値を上書きするようにしている
-        if col_num > len(self.ax.collections):
-            col_num = len(self.ax.collections)
-        for idx in range(col_num):
-            self.ax.collections[idx].set_facecolor('None')
 
         self.canvas.draw()
 
