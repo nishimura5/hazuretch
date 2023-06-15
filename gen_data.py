@@ -17,11 +17,11 @@ def sample1():
 def sample2():
     data = {}
     data['time'] = pd.timedelta_range(start='0 day', periods=1000, freq='10L')
-    data['sigma1'] = np.random.normal(20, 1, 1000)
-    data['sigma2'] = np.random.normal(20, 2, 1000)
+    data['sigma1'] = np.sort(np.random.normal(20, 1, 1000))
+    data['sigma2'] = np.sort(np.random.normal(20, 2, 1000))[::-1]
 
-    a = np.random.normal(18, 0.7, 500)
-    b = np.random.normal(22, 0.7, 500)
+    a = np.sort(np.random.normal(17, 1, 500))
+    b = np.sort(np.random.normal(23, 1, 500))
     data['double'] = np.concatenate([a,b])
 
     data_df = pd.DataFrame(data)
@@ -33,8 +33,8 @@ def sample2():
 def sample3():
     data={}
     data['time'] = pd.timedelta_range(start='0 day', periods=100000, freq='10L')
-    data['sigma1'] = np.random.normal(20, 1, 100000)
-    data['sigma1_noise'] = np.random.normal(20, 1, 100000)
+    data['sigma1'] = np.sort(np.random.normal(20, 1, 100000))
+    data['sigma1_noise'] = np.sort(np.random.normal(20, 1, 100000))
 
     for i in range (30):
         idx_small = random.randint(0,50000)
