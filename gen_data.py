@@ -6,7 +6,7 @@ import numpy as np
 def sample1():
     data = {}
     data['time'] = pd.timedelta_range(start='0 day', periods=1000, freq='s')
-    data['sigma1'] = np.random.normal(20, 1, 1000)
+    data['sigma1'] = np.sort(np.random.normal(20, 1, 1000))
 
     data_df = pd.DataFrame(data)
     data_df['time'] = data_df['time'].astype(str).str.extract('days (.*)')
