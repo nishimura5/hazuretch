@@ -21,12 +21,11 @@ class App(tk.Frame):
         super().__init__(master)
         self.pack()
 
-        master.geometry("800x600")
+        master.geometry("1000x600")
         master.title("はずれっち")
         input_frame = ttk.Frame(master)
         button_frame = ttk.Frame(master)
         graph_frame = ttk.Frame(master)
-        hazure_frame = ttk.Frame(master)
 
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
@@ -54,7 +53,7 @@ class App(tk.Frame):
         draw_button = ttk.Button(
             button_frame,
             text="描画",
-            width=8,
+            width=7,
             command=lambda:[self.input_data.set_plot(canvas, ax, plot_cbox.get(), alpha_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
         draw_button.grid(row=0, column=8, padx=10)
 
@@ -67,32 +66,74 @@ class App(tk.Frame):
 
         toolbar = NavigationToolbar2Tk(canvas, graph_frame)
         toolbar.pack()
-        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.X)
         graph_frame.pack()
 
-        self.column_cbox = ttk.Combobox(toolbar, state='readonly')
-        self.column_cbox.pack(side=tk.LEFT, padx=10)
-        self.remove_lower_entry = ttk.Entry(toolbar, width=8)
-        self.remove_lower_entry.pack(side=tk.LEFT)
-        nyoro = tk.Label(toolbar, text='～')
-        nyoro.pack(side=tk.LEFT)
-        self.remove_upper_entry = ttk.Entry(toolbar, width=8)
-        self.remove_upper_entry.pack(side=tk.LEFT)
-        output_button = ttk.Button(toolbar, text="除去", width=10, command=lambda:[self.remove_plots()])
-        output_button.pack(side=tk.LEFT, padx=10)
+        ## 除去コントロール
+        self.remove_frame1 = RemoveCtrl(toolbar)
+        and_label = ttk.Label(toolbar, text='AND')
+        and_label.pack(side=tk.LEFT)
+        self.remove_frame2 = RemoveCtrl(toolbar)
 
-        hazure_frame.pack()
+        output_button = ttk.Button(toolbar, text="除去", width=7, command=lambda:[self.remove_plots()])
+        output_button.pack(side=tk.LEFT, padx=10)
 
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
 
     def update_control(self):
-        self.column_cbox['value'] = list(self.input_data.src_df.columns)
+        self.remove_frame1.set_cols(list(self.input_data.src_df.columns))
+        self.remove_frame2.set_cols(list(self.input_data.src_df.columns))
         self.time_min_entry.delete(0,tk.END)
         self.time_min_entry.insert(tk.END,self.input_data.time_min)
         self.time_max_entry.delete(0,tk.END)
         self.time_max_entry.insert(tk.END,self.input_data.time_max)
 
     def remove_plots(self):
+        col_x, remove_lower_x, remove_upper_x = self.remove_frame1.get_val()
+        col_y, remove_lower_y, remove_upper_y = self.remove_frame2.get_val()
+        time_min = self.time_min_entry.get()
+        time_max = self.time_max_entry.get()
+
+        if col_x == 'none' and col_y == 'none':
+            return
+        elif col_y != 'none' and col_x == 'none':
+            self.input_data.remove_src(col_y, remove_lower_y, remove_upper_y, time_min, time_max)
+        elif col_x != 'none' and col_y == 'none':
+            self.input_data.remove_src(col_x, remove_lower_x, remove_upper_x, time_min, time_max)
+        else:
+            self.input_data.remove_src_and(
+                [col_x, col_y],
+                [remove_lower_x, remove_lower_y],
+                [remove_upper_x, remove_upper_y],
+                time_min, time_max)
+
+        print(col_x, remove_lower_x, remove_upper_x)
+        print(col_y, remove_lower_y, remove_upper_y)
+
+        ## 除去後のデータをCSV出力
+        self.input_data.plot(time_min=time_min, time_max=time_max)
+
+    def click(self, event):
+        x_val, y_val = (event.xdata, event.ydata)
+        print(x_val, y_val)
+
+class RemoveCtrl(ttk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+        self.column_cbox = ttk.Combobox(master, values=['none'], state='readonly', width=10)
+        self.column_cbox.current(0)
+        self.remove_lower_entry = ttk.Entry(master, width=6)
+        self.nyoro = tk.Label(master, text='～')
+        self.remove_upper_entry = ttk.Entry(master, width=6)
+        self.column_cbox.pack(side=tk.LEFT, padx=5)
+        self.remove_lower_entry.pack(side=tk.LEFT)
+        self.nyoro.pack(side=tk.LEFT)
+        self.remove_upper_entry.pack(side=tk.LEFT)
+
+    def set_cols(self, cols):
+        self.column_cbox['value'] = ['none', *cols]
+
+    def get_val(self):
         col = self.column_cbox.get()
         remove_lower = self.remove_lower_entry.get()
         remove_upper = self.remove_upper_entry.get()
@@ -100,24 +141,14 @@ class App(tk.Frame):
             remove_lower = float(remove_lower)
             remove_upper = float(remove_upper)
         else:
-            return
-        print(col, remove_lower, remove_upper)
-
-        time_min = self.time_min_entry.get()
-        time_max = self.time_max_entry.get()
-        self.input_data.remove_src(col, remove_lower, remove_upper, time_min, time_max)
-        ## 除去後のデータをCSV出力
-        self.input_data.plot(time_min=time_min, time_max=time_max)
+            return 'none', 0, 0
+        return col, remove_lower, remove_upper
 
     def _is_float(self, string):
         if string.replace(".", "").isnumeric():
             return True
         else:
             return False
-
-    def click(self, event):
-        x_val, y_val = (event.xdata, event.ydata)
-        print(x_val, y_val)
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
@@ -147,6 +178,15 @@ class Inputdata(ttk.Frame):
     def remove_src(self, col, remove_lower, remove_upper, time_min, time_max):
         tar_df = self.src_df.loc[time_min:time_max, :]
         tar_df.loc[(tar_df[col] >= remove_lower)&(tar_df[col] <= remove_upper), col] = np.nan
+        self.src_df.loc[time_min:time_max, :] = tar_df
+        self.src_df.to_csv('./dst.csv')
+
+    def remove_src_and(self, cols, remove_lowers, remove_uppers, time_min, time_max):
+        tar_df = self.src_df.loc[time_min:time_max, :]
+        tar_df.loc[
+            (tar_df[cols[0]] >= remove_lowers[0])&(tar_df[cols[0]] <= remove_uppers[0])&
+            (tar_df[cols[1]] >= remove_lowers[1])&(tar_df[cols[1]] <= remove_uppers[1]),
+              cols] = np.nan
         self.src_df.loc[time_min:time_max, :] = tar_df
         self.src_df.to_csv('./dst.csv')
 
