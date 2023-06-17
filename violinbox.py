@@ -33,21 +33,30 @@ class App(tk.Frame):
 
         load_button = ttk.Button(button_frame, text="CSVを開く", width=10, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
         load_button.grid(row=0, column=0, padx=10)
-        plot_cbox = ttk.Combobox(button_frame, values=['default', 'stripplot', 'swarmplot', 'lineplot'], state='readonly', width=10)
+        plot_cbox = ttk.Combobox(button_frame, values=['default', 'stripplot', 'swarmplot', 'lineplot', 'scatterplot'], state='readonly', width=8)
         plot_cbox.current(0)
         plot_cbox.grid(row=0, column=1, padx=10)
+        alpha_label = tk.Label(button_frame, text='alpha:')
+        alpha_label.grid(row=0, column=2)
+        alpha_cbox = ttk.Combobox(button_frame, values=['0.5', '0.2', '0.1', '0.05'], state='readonly', width=4)
+        alpha_cbox.current(0)
+        alpha_cbox.grid(row=0, column=3, padx=1)
 
         caption_time = tk.Label(button_frame, text='time:')
-        caption_time.grid(row=0, column=2)
+        caption_time.grid(row=0, column=4)
         self.time_min_entry = ttk.Entry(button_frame, width=12)
-        self.time_min_entry.grid(row=0, column=3)
+        self.time_min_entry.grid(row=0, column=5)
         nyoro_time = tk.Label(button_frame, text='～')
-        nyoro_time.grid(row=0, column=4)
+        nyoro_time.grid(row=0, column=6)
         self.time_max_entry = ttk.Entry(button_frame, width=12)
-        self.time_max_entry.grid(row=0, column=5)
+        self.time_max_entry.grid(row=0, column=7)
 
-        draw_button = ttk.Button(button_frame, text="描画", width=10, command=lambda:[self.input_data.set_plot(canvas, ax, plot_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
-        draw_button.grid(row=0, column=6, padx=10)
+        draw_button = ttk.Button(
+            button_frame,
+            text="描画",
+            width=8,
+            command=lambda:[self.input_data.set_plot(canvas, ax, plot_cbox.get(), alpha_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
+        draw_button.grid(row=0, column=8, padx=10)
 
         button_frame.pack(pady=5)
 
@@ -121,10 +130,10 @@ class Inputdata(ttk.Frame):
         self.load_file()
         self.plot(mode='default')
 
-    def set_plot(self, canvas, ax, mode, time_min, time_max):
+    def set_plot(self, canvas, ax, mode, alpha, time_min, time_max):
         self.canvas = canvas
         self.ax = ax
-        self.plot(mode, time_min, time_max)
+        self.plot(mode, alpha, time_min, time_max)
 
     def load_file(self):
         script_path = os.getcwd()
@@ -141,7 +150,8 @@ class Inputdata(ttk.Frame):
         self.src_df.loc[time_min:time_max, :] = tar_df
         self.src_df.to_csv('./dst.csv')
 
-    def plot(self, mode='default', time_min=None, time_max=None):
+    def plot(self, mode='default', alpha='0.5', time_min=None, time_max=None):
+        alpha = float(alpha)
         if time_min is not None and time_max is not None:
             plot_df = self.src_df.loc[time_min:time_max, :]
         else:
@@ -158,7 +168,10 @@ class Inputdata(ttk.Frame):
         if mode == 'lineplot':
             tick_interval = len(plot_df.index) / 10
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_interval)) 
-            sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax);
+            sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax)
+        elif mode == 'scatterplot':
+            sns.scatterplot(data=plot_df, x=plot_df.columns[0], y=plot_df.columns[1], size=2, edgecolor='none', alpha=alpha, ax=self.ax)
+
         else:
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(1)) 
             sns.violinplot(data=plot_df, linewidth=1, showmeans=True, inner=None, ax=self.ax)
@@ -166,9 +179,9 @@ class Inputdata(ttk.Frame):
                 collection.set_facecolor('none')
 
             if mode == 'swarmplot':
-                sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.5, ax=self.ax)
+                sns.swarmplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=alpha, ax=self.ax)
             elif mode == 'stripplot':
-                sns.stripplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=0.2, ax=self.ax)
+                sns.stripplot(data=plot_df, size=2, palette=['black' for x in range(col_num)], alpha=alpha, ax=self.ax)
             else:
                 pass
             sns.boxplot(data=plot_df, linewidth=1, fliersize=2, color='lightgray', width=0.1, ax=self.ax)
