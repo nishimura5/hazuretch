@@ -30,9 +30,20 @@ class App(tk.Frame):
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
 
-        load_button = ttk.Button(button_frame, text="CSVを開く", width=10, command=lambda:[self.input_data.load_and_plot(canvas, ax), self.update_control()])
+        load_button = ttk.Button(
+            button_frame,
+            text="CSVを開く",
+            width=10,
+            command=lambda:[
+                self.input_data.load_and_plot(canvas, ax),
+                self.update_control()
+                ])
         load_button.grid(row=0, column=0, padx=10)
-        plot_cbox = ttk.Combobox(button_frame, values=['default', 'stripplot', 'swarmplot', 'lineplot', 'scatterplot'], state='readonly', width=8)
+        plot_cbox = ttk.Combobox(
+            button_frame,
+            values=['default', 'stripplot', 'swarmplot', 'lineplot', 'scatterplot'],
+            state='readonly',
+            width=8)
         plot_cbox.current(0)
         plot_cbox.grid(row=0, column=1, padx=10)
         alpha_label = tk.Label(button_frame, text='alpha:')
@@ -57,7 +68,13 @@ class App(tk.Frame):
             text="描画",
             width=7,
             command=lambda:[
-                self.input_data.set_plot(canvas, ax, plot_cbox.get(), alpha_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get()),
+                self.input_data.set_plot(
+                    canvas,
+                    ax,
+                    plot_cbox.get(),
+                    alpha_cbox.get(),
+                    self.time_min_entry.get(),
+                    self.time_max_entry.get()),
                 self.set_plot_mode(plot_cbox.get())
                 ])
         draw_button.grid(row=0, column=8, padx=10)
@@ -256,7 +273,15 @@ class Inputdata(ttk.Frame):
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_interval)) 
             sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax)
         elif mode == 'scatterplot':
-            sns.scatterplot(data=plot_df, x=plot_df.columns[0], y=plot_df.columns[1], size=2, edgecolor='none', alpha=alpha, ax=self.ax)
+            sns.scatterplot(
+                data=plot_df,
+                x=plot_df.columns[0],
+                y=plot_df.columns[1],
+                size=2,
+                edgecolor='none',
+                alpha=alpha,
+                legend=False,
+                ax=self.ax)
 
         else:
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(1)) 
