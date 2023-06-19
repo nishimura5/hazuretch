@@ -50,11 +50,16 @@ class App(tk.Frame):
         self.time_max_entry = ttk.Entry(button_frame, width=12)
         self.time_max_entry.grid(row=0, column=7)
 
+        ## 描画ボタンを押すとplot_modeが確定する、plot_modeは除去値エントリーのクリック入力の分岐に使用している
+        self.plot_mode = ''
         draw_button = ttk.Button(
             button_frame,
             text="描画",
             width=7,
-            command=lambda:[self.input_data.set_plot(canvas, ax, plot_cbox.get(), alpha_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get())])
+            command=lambda:[
+                self.input_data.set_plot(canvas, ax, plot_cbox.get(), alpha_cbox.get(), self.time_min_entry.get(), self.time_max_entry.get()),
+                self.set_plot_mode(plot_cbox.get())
+                ])
         draw_button.grid(row=0, column=8, padx=10)
 
         button_frame.pack(pady=5)
@@ -70,10 +75,19 @@ class App(tk.Frame):
         graph_frame.pack()
 
         ## 除去コントロール
+        self.focused_entry = None
         self.remove_frame1 = RemoveCtrl(toolbar)
         and_label = ttk.Label(toolbar, text='AND')
         and_label.pack(side=tk.LEFT)
         self.remove_frame2 = RemoveCtrl(toolbar)
+
+        ## グラフクリックでentryにyの値を入れる用のbind
+        ## self.focusedには↓のlower1, upper1, lower2, upper2のいずれかが入る
+        self.focused = ''
+        self.remove_frame1.remove_lower_entry.bind("<FocusIn>", func=lambda e, code='lower1': self.set_focused(code))
+        self.remove_frame1.remove_upper_entry.bind("<FocusIn>", func=lambda e, code='upper1': self.set_focused(code))
+        self.remove_frame2.remove_lower_entry.bind("<FocusIn>", func=lambda e, code='lower2': self.set_focused(code))
+        self.remove_frame2.remove_upper_entry.bind("<FocusIn>", func=lambda e, code='upper2': self.set_focused(code))
 
         output_button = ttk.Button(toolbar, text="除去", width=7, command=lambda:[self.remove_plots()])
         output_button.pack(side=tk.LEFT, padx=10)
@@ -113,9 +127,28 @@ class App(tk.Frame):
         ## 除去後のデータをCSV出力
         self.input_data.plot(time_min=time_min, time_max=time_max)
 
+    def set_plot_mode(self, plot_mode):
+        self.plot_mode = plot_mode
+
     def click(self, event):
         x_val, y_val = (event.xdata, event.ydata)
-        print(x_val, y_val)
+        if self.plot_mode == 'scatterplot':
+            if 'lower' in self.focused:
+                self.remove_frame1.set_entry('lower', str(x_val))
+                self.remove_frame2.set_entry('lower', str(y_val))
+            elif 'upper' in self.focused:
+                self.remove_frame1.set_entry('upper', str(x_val))
+                self.remove_frame2.set_entry('upper', str(y_val))
+        else:
+            if '1' in self.focused:
+                self.remove_frame1.set_entry(self.focused, str(y_val))
+            elif '2' in self.focused:
+                self.remove_frame2.set_entry(self.focused, str(y_val))
+        
+        print(self.focused, x_val, y_val)
+
+    def set_focused(self, code):
+        self.focused = code
 
 class RemoveCtrl(ttk.Frame):
     def __init__(self, master):
@@ -129,6 +162,14 @@ class RemoveCtrl(ttk.Frame):
         self.remove_lower_entry.pack(side=tk.LEFT)
         self.nyoro.pack(side=tk.LEFT)
         self.remove_upper_entry.pack(side=tk.LEFT)
+
+    def set_entry(self, code, val):
+        if 'lower' in code:
+            self.remove_lower_entry.delete(0,tk.END)
+            self.remove_lower_entry.insert(tk.END,val)
+        elif 'upper' in code:
+            self.remove_upper_entry.delete(0,tk.END)
+            self.remove_upper_entry.insert(tk.END,val)
 
     def set_cols(self, cols):
         self.column_cbox['value'] = ['none', *cols]
