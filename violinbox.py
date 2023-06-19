@@ -133,6 +133,8 @@ class App(tk.Frame):
     def click(self, event):
         x_val, y_val = (event.xdata, event.ydata)
         if self.plot_mode == 'scatterplot':
+            self.remove_frame1.set_col(1)
+            self.remove_frame2.set_col(2)
             if 'lower' in self.focused:
                 self.remove_frame1.set_entry('lower', str(x_val))
                 self.remove_frame2.set_entry('lower', str(y_val))
@@ -173,6 +175,9 @@ class RemoveCtrl(ttk.Frame):
 
     def set_cols(self, cols):
         self.column_cbox['value'] = ['none', *cols]
+
+    def set_col(self, current):
+        self.column_cbox.current(current)
 
     def get_val(self):
         col = self.column_cbox.get()
