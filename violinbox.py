@@ -16,6 +16,9 @@ matplotlib.use("tkagg")
 import pandas as pd
 import seaborn as sns
 
+from remove_ctrl import RemoveCtrl
+from draw_ctrl import DrawCtrl
+
 class App(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
@@ -38,28 +41,10 @@ class App(tk.Frame):
                 self.input_data.load_and_plot(canvas, ax),
                 self.update_control()
                 ])
-        load_button.grid(row=0, column=0, padx=10)
-        plot_cbox = ttk.Combobox(
-            button_frame,
-            values=['default', 'stripplot', 'swarmplot', 'lineplot', 'scatterplot'],
-            state='readonly',
-            width=8)
-        plot_cbox.current(0)
-        plot_cbox.grid(row=0, column=1, padx=10)
-        alpha_label = tk.Label(button_frame, text='alpha:')
-        alpha_label.grid(row=0, column=2)
-        alpha_cbox = ttk.Combobox(button_frame, values=['0.5', '0.2', '0.1', '0.05'], state='readonly', width=4)
-        alpha_cbox.current(0)
-        alpha_cbox.grid(row=0, column=3, padx=1)
+        load_button.pack(side=tk.LEFT, padx=10)
 
-        caption_time = tk.Label(button_frame, text='time:')
-        caption_time.grid(row=0, column=4)
-        self.time_min_entry = ttk.Entry(button_frame, width=12)
-        self.time_min_entry.grid(row=0, column=5)
-        nyoro_time = tk.Label(button_frame, text='～')
-        nyoro_time.grid(row=0, column=6)
-        self.time_max_entry = ttk.Entry(button_frame, width=12)
-        self.time_max_entry.grid(row=0, column=7)
+        ## 描画コントロール
+        self.dc = DrawCtrl(button_frame)
 
         ## 描画ボタンを押すとplot_modeが確定する、plot_modeは除去値エントリーのクリック入力の分岐に使用している
         self.plot_mode = ''
@@ -71,16 +56,17 @@ class App(tk.Frame):
                 self.input_data.set_plot(
                     canvas,
                     ax,
-                    plot_cbox.get(),
-                    alpha_cbox.get(),
-                    self.time_min_entry.get(),
-                    self.time_max_entry.get()),
-                self.set_plot_mode(plot_cbox.get())
+                    self.dc.get_mode(),
+                    self.dc.get_alpha(),
+                    self.dc.get_time_min(),
+                    self.dc.get_time_max()),
+                self.set_plot_mode(self.dc.get_mode())
                 ])
-        draw_button.grid(row=0, column=8, padx=10)
+        draw_button.pack(side=tk.LEFT, padx=10)
 
         button_frame.pack(pady=5)
 
+        ## グラフ
         dpi = 120
         fig, ax = plt.subplots(figsize=(1200/dpi,900/dpi), dpi=dpi)
         fig.canvas.mpl_connect("button_press_event", self.click)
@@ -92,7 +78,6 @@ class App(tk.Frame):
         graph_frame.pack()
 
         ## 除去コントロール
-        self.focused_entry = None
         self.remove_frame1 = RemoveCtrl(toolbar)
         and_label = ttk.Label(toolbar, text='AND')
         and_label.pack(side=tk.LEFT)
@@ -117,10 +102,7 @@ class App(tk.Frame):
         '''
         self.remove_frame1.set_cols(list(self.input_data.src_df.columns))
         self.remove_frame2.set_cols(list(self.input_data.src_df.columns))
-        self.time_min_entry.delete(0,tk.END)
-        self.time_min_entry.insert(tk.END,self.input_data.time_min)
-        self.time_max_entry.delete(0,tk.END)
-        self.time_max_entry.insert(tk.END,self.input_data.time_max)
+        self.dc.set_entry(self.input_data.time_min, self.input_data.time_max)
 
     def remove_plots(self):
         '''
@@ -129,8 +111,8 @@ class App(tk.Frame):
         '''
         col_x, remove_lower_x, remove_upper_x = self.remove_frame1.get_val()
         col_y, remove_lower_y, remove_upper_y = self.remove_frame2.get_val()
-        time_min = self.time_min_entry.get()
-        time_max = self.time_max_entry.get()
+        time_min = self.dc.get_time_min()
+        time_max = self.dc.get_time_max()
 
         if col_x == 'none' and col_y == 'none':
             return
@@ -186,50 +168,6 @@ class App(tk.Frame):
 
     def set_focused(self, code):
         self.focused = code
-
-class RemoveCtrl(ttk.Frame):
-    def __init__(self, master):
-        super().__init__(master)
-        self.column_cbox = ttk.Combobox(master, values=['none'], state='readonly', width=10)
-        self.column_cbox.current(0)
-        self.remove_lower_entry = ttk.Entry(master, width=6)
-        self.nyoro = tk.Label(master, text='～')
-        self.remove_upper_entry = ttk.Entry(master, width=6)
-        self.column_cbox.pack(side=tk.LEFT, padx=5)
-        self.remove_lower_entry.pack(side=tk.LEFT)
-        self.nyoro.pack(side=tk.LEFT)
-        self.remove_upper_entry.pack(side=tk.LEFT)
-
-    def set_entry(self, code, val):
-        if 'lower' in code:
-            self.remove_lower_entry.delete(0,tk.END)
-            self.remove_lower_entry.insert(tk.END,val)
-        elif 'upper' in code:
-            self.remove_upper_entry.delete(0,tk.END)
-            self.remove_upper_entry.insert(tk.END,val)
-
-    def set_cols(self, cols):
-        self.column_cbox['value'] = ['none', *cols]
-
-    def set_col(self, current):
-        self.column_cbox.current(current)
-
-    def get_val(self):
-        col = self.column_cbox.get()
-        remove_lower = self.remove_lower_entry.get()
-        remove_upper = self.remove_upper_entry.get()
-        if self._is_float(remove_lower) and self._is_float(remove_upper):
-            remove_lower = float(remove_lower)
-            remove_upper = float(remove_upper)
-        else:
-            return 'none', 0, 0
-        return col, remove_lower, remove_upper
-
-    def _is_float(self, string):
-        if string.replace(".", "").isnumeric():
-            return True
-        else:
-            return False
 
 class Inputdata(ttk.Frame):
     def __init__(self, input_frame):
