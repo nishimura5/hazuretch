@@ -18,6 +18,7 @@ import seaborn as sns
 
 from remove_ctrl import RemoveCtrl
 from draw_ctrl import DrawCtrl
+from fill import interpolate
 
 class App(tk.Frame):
     def __init__(self, master):
@@ -29,6 +30,7 @@ class App(tk.Frame):
         input_frame = ttk.Frame(master)
         button_frame = ttk.Frame(master)
         graph_frame = ttk.Frame(master)
+        fill_frame = ttk.Frame(master)
 
         self.input_data = Inputdata(input_frame)
         input_frame.pack()
@@ -67,14 +69,14 @@ class App(tk.Frame):
         button_frame.pack(pady=5)
 
         ## グラフ
-        dpi = 120
-        fig, ax = plt.subplots(figsize=(1200/dpi,900/dpi), dpi=dpi)
+        dpi = 100
+        fig, ax = plt.subplots(figsize=(1200/dpi,600/dpi), dpi=dpi)
         fig.canvas.mpl_connect("button_press_event", self.click)
         canvas = FigureCanvasTkAgg(fig, master=graph_frame)
 
         toolbar = NavigationToolbar2Tk(canvas, graph_frame)
         toolbar.pack()
-        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.X)
+        canvas.get_tk_widget().pack(side=tk.LEFT, fill=tk.X, expand=False)
         graph_frame.pack()
 
         ## 除去コントロール
@@ -93,6 +95,15 @@ class App(tk.Frame):
 
         output_button = ttk.Button(toolbar, text="除去", width=7, command=lambda:[self.remove_plots()])
         output_button.pack(side=tk.LEFT, padx=10)
+
+        ## 補完コントロール
+        tk.Label(fill_frame, text='連続するnanが').pack(side=tk.LEFT)
+        limit_entry = ttk.Entry(fill_frame, width=4)
+        limit_entry.pack(side=tk.LEFT)
+        tk.Label(fill_frame, text='個以内なら補完する').pack(side=tk.LEFT, padx=(0, 10))
+        output_button = ttk.Button(fill_frame, text="補完", width=10, command=lambda:[self.fill_plots(limit_entry.get())])
+        output_button.pack()
+        fill_frame.pack()
 
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
 
@@ -129,6 +140,18 @@ class App(tk.Frame):
 
         print(col_x, remove_lower_x, remove_upper_x)
         print(col_y, remove_lower_y, remove_upper_y)
+
+        if self.plot_mode in ['stripplot', 'swarmplot']:
+            mode = 'default'
+        else:
+            mode = self.plot_mode
+        self.input_data.plot(time_min=time_min, time_max=time_max, mode=mode)
+
+    def fill_plots(self, limit):
+        time_min = self.dc.get_time_min()
+        time_max = self.dc.get_time_max()
+
+        self.input_data.fill_src(limit, time_min, time_max)
 
         if self.plot_mode in ['stripplot', 'swarmplot']:
             mode = 'default'
@@ -206,6 +229,13 @@ class Inputdata(ttk.Frame):
             (tar_df[cols[0]] >= remove_lowers[0])&(tar_df[cols[0]] <= remove_uppers[0])&
             (tar_df[cols[1]] >= remove_lowers[1])&(tar_df[cols[1]] <= remove_uppers[1]),
               cols] = np.nan
+        self.src_df.loc[time_min:time_max, :] = tar_df
+        self.src_df.to_csv('./dst.csv')
+
+    def fill_src(self, limit, time_min, time_max):
+        tar_df = self.src_df.loc[time_min:time_max, :]
+        limit = int(limit)
+        tar_df = interpolate(tar_df, limit)
         self.src_df.loc[time_min:time_max, :] = tar_df
         self.src_df.to_csv('./dst.csv')
 
