@@ -112,6 +112,9 @@ class App(tk.Frame):
         master.protocol("WM_DELETE_WINDOW", toolbar.quit)
 
     def update_control(self):
+        '''
+        「CSVを開く」ボタンをクリックすると、新たに読み込まれたCSVに対応した値にentryやcomboboxが更新される。
+        '''
         self.remove_frame1.set_cols(list(self.input_data.src_df.columns))
         self.remove_frame2.set_cols(list(self.input_data.src_df.columns))
         self.time_min_entry.delete(0,tk.END)
@@ -120,6 +123,10 @@ class App(tk.Frame):
         self.time_max_entry.insert(tk.END,self.input_data.time_max)
 
     def remove_plots(self):
+        '''
+        「除去」ボタンをクリックすると、指定したカラムの指定した値範囲のデータがnanに置き換えられる。
+        除去後のデータは「dst.csv」に保存され、srcのcsvは変更されない。
+        '''
         col_x, remove_lower_x, remove_upper_x = self.remove_frame1.get_val()
         col_y, remove_lower_y, remove_upper_y = self.remove_frame2.get_val()
         time_min = self.time_min_entry.get()
@@ -141,13 +148,24 @@ class App(tk.Frame):
         print(col_x, remove_lower_x, remove_upper_x)
         print(col_y, remove_lower_y, remove_upper_y)
 
-        ## 除去後のデータをCSV出力
-        self.input_data.plot(time_min=time_min, time_max=time_max)
+        if self.plot_mode in ['stripplot', 'swarmplot']:
+            mode = 'default'
+        else:
+            mode = self.plot_mode
+        self.input_data.plot(time_min=time_min, time_max=time_max, mode=mode)
 
     def set_plot_mode(self, plot_mode):
+        '''
+        「描画」ボタンをクリックすると、プロットモード(self.plot_mode)が確定する。
+        「swarmplot」はデータ数が多いと(10000を超えたあたりから)描画が非常に遅くなるので注意。
+        '''
         self.plot_mode = plot_mode
 
     def click(self, event):
+        '''
+        除去領域entryをフォーカスした後、グラフ領域をクリックすると、フォーカスしたentryにクリックした値が入力される。
+        「scatterplot」のときのみ、横軸と縦軸に値が同時に入る。
+        '''
         x_val, y_val = (event.xdata, event.ydata)
         if self.plot_mode == 'scatterplot':
             self.remove_frame1.set_col(1)
@@ -164,7 +182,7 @@ class App(tk.Frame):
             elif '2' in self.focused:
                 self.remove_frame2.set_entry(self.focused, str(y_val))
         
-        print(self.focused, x_val, y_val)
+#        print(self.focused, x_val, y_val)
 
     def set_focused(self, code):
         self.focused = code
@@ -271,7 +289,8 @@ class Inputdata(ttk.Frame):
         if mode == 'lineplot':
             tick_interval = len(plot_df.index) / 10
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(tick_interval)) 
-            sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax)
+#            sns.lineplot(data=plot_df, dashes=False, linewidth=1, ax=self.ax)
+            plot_df.plot(use_index=True, kind='line', ax=self.ax)
         elif mode == 'scatterplot':
             sns.scatterplot(
                 data=plot_df,
@@ -282,7 +301,6 @@ class Inputdata(ttk.Frame):
                 alpha=alpha,
                 legend=False,
                 ax=self.ax)
-
         else:
             self.ax.xaxis.set_major_locator(ticker.MultipleLocator(1)) 
             sns.violinplot(data=plot_df, linewidth=1, showmeans=True, inner=None, ax=self.ax)
